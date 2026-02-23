@@ -1503,65 +1503,60 @@ function previewImage(input) {
     }
 }
 
-// 2. 💾 Incident එක සේව් කරන ප්‍රධාන Function එක (වැරදි මඟහරවා ගත් සංස්කරණය)
 async function saveIncident(sync = false) {
-    // 1. 📸 ඡායාරූපය පද්ධතියට ලබා ගැනීම
+    // 1. 📸 ඡායාරූපය ලබා ගැනීම (HTML ID එක 'incidentPhoto' ලෙස තබා ගන්න)
     const photoInput = document.getElementById('incidentPhoto') || document.getElementById('incPhoto');
     let photoBase64 = "";
     if (photoInput && photoInput.files.length > 0) {
         photoBase64 = await fileToBase64(photoInput.files[0]);
     }
 
-    // 2. 🛠️ ආරක්ෂිතව දත්ත ලබා ගැනීමේ ක්‍රමය (Null check)
-    const getSafeValue = (id) => {
+    const getVal = (id) => {
         const el = document.getElementById(id);
-        if (!el) {
-            console.warn("Element not found: " + id);
-            return "";
-        }
-        return el.value;
+        return el ? el.value : "";
     };
 
-    // 3. 📝 වාර්තාව සකස් කිරීම
+    // 2. 📝 වාර්තාව සකස් කිරීම (Sheet එකේ Column A සිට O දක්වා පිළිවෙළට)
     const record = {
-        id: typeof generateId === 'function' ? generateId('INC') : "INC-" + Date.now(),
-        date: getSafeValue('incDate') || new Date().toISOString().split('T')[0],
-        time: getSafeValue('incTime'),
-        type: getSafeValue('incType'),
-        severity: getSafeValue('incSeverity'),
-        location: getSafeValue('incLocation'),
-        reportedBy: getSafeValue('incReportedBy'),
-        description: getSafeValue('incDescription'),
-        status: getSafeValue('incStatus'),
-        photo: photoBase64, // මෙන්න අලුත් ඡායාරූපය
-        timestamp: new Date().toLocaleString()
+        id: "INC-" + Date.now(),
+        date: getVal('incDate') || new Date().toISOString().split('T')[0],
+        type: getVal('incType'),
+        severity: getVal('incSeverity'),
+        time: getVal('incTime'), // Column E
+        location: getVal('incLocation'), // Column F
+        reportedBy: getVal('incReportedBy'), // Column G
+        injured: getVal('incInjured'), // Column H
+        bodyPart: getVal('incBodyPart'), // Column I
+        description: getVal('incDescription'), // Column J
+        rca: getVal('incRCA'), // Column K
+        actions: getVal('incActions'), // Column L
+        status: getVal('incStatus'), // Column M
+        timestamp: new Date().toLocaleString(), // Column N
+        photo: photoBase64 // Column O (Evidence Photo)
     };
 
-    // 4. 💾 පද්ධතියට දත්ත ඇතුළත් කිරීම
-    if (typeof addRecord === 'function') {
-        addRecord('incidents', record);
-    }
+    // 3. 💾 දත්ත සේව් කිරීම
+    if (typeof addRecord === 'function') addRecord('incidents', record);
 
-    // 5. 📤 වලාකුළට (Sync) යැවීම
     if (sync) {
         if (typeof submitToSheet === 'function') {
-            // Sheet එකට යවන දත්ත පෙළගැස්ම
+            // තීරු 15 ම පිළිවෙළට මෙතැන තියෙනවා
             const sheetData = [
-                record.id, record.date, record.time, record.type, record.severity,
-                record.location, record.reportedBy, record.description, record.status,
-                record.timestamp, record.photo // 👈 ඡායාරූපය අවසානයට යයි
+                record.id, record.date, record.type, record.severity, record.time,
+                record.location, record.reportedBy, record.injured, record.bodyPart,
+                record.description, record.rca, record.actions, record.status,
+                record.timestamp, record.photo
             ];
             submitToSheet('Incidents', sheetData);
-        } else {
-            alert("Error: submitToSheet function not found!");
         }
     }
 
-    // 6. 🔄 පද්ධතිය යාවත්කාලීන කිරීම
     if (typeof renderIncidents === 'function') renderIncidents();
     if (typeof closeModal === 'function') closeModal('incidentModal');
     
-    showToast('Incident saved and synced successfully!', 'success');
+    // සාර්ථක පණිවිඩය (Toast) පෙන්වීම
+    const msg = photoBase64 ? "Incident with photo saved successfully!" : "Incident saved (No photo chosen)";
+    alert(msg);
 }
 // 🖼️ පින්තූරය දත්තයක් බවට හරවන Function එක
 function fileToBase64(file) {
