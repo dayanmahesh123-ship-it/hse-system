@@ -942,18 +942,28 @@ const CONFIG = {
   DEVELOPER: 'Mahesh',
   POSITION: 'HSE Officer'
 };
-// 1. පින්තූරය තේරූ විට එය වෙබ් අඩවියේ පෙන්වීමට
-function previewIncidentPhoto(input) {
-    const container = document.getElementById('incPhotoPreviewContainer');
-    const img = document.getElementById('incPhotoPreview');
+// 1. 📸 පින්තූරය තේරූ විට එය වෙබ් අඩවියේ පෙන්වීමට
+function previewImage(input) {
+    const previewContainer = document.getElementById('imagePreviewContainer');
+    const previewImage = document.getElementById('imagePreview');
     if (input.files && input.files[0]) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            img.src = e.target.result;
-            container.style.display = 'block';
-        };
+            if(previewImage) previewImage.src = e.target.result;
+            if(previewContainer) previewContainer.style.display = 'block';
+        }
         reader.readAsDataURL(input.files[0]);
     }
+}
+
+// 2. 📄 ඡායාරූපය දත්තයක් බවට හරවන සහය ශ්‍රිතය
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
 }
 
 // 2. පින්තූරය දත්තයක් බවට හරවන Helper Function එක
@@ -1495,55 +1505,64 @@ function previewImage(input) {
 
 // 2. 💾 Incident එක සේව් කරන ප්‍රධාන Function එක (වැරදි මඟහරවා ගත් සංස්කරණය)
 async function saveIncident(sync = false) {
-    // 📸 ඡායාරූපය ලබා ගැනීම
+    // 1. 📸 ඡායාරූපය පද්ධතියට ලබා ගැනීම
     const photoInput = document.getElementById('incidentPhoto') || document.getElementById('incPhoto');
     let photoBase64 = "";
     if (photoInput && photoInput.files.length > 0) {
         photoBase64 = await fileToBase64(photoInput.files[0]);
     }
 
-    // දත්ත ලබා ගැනීමේදී වැරදි සිදු නොවන ලෙස පරීක්ෂා කිරීම
-    const getValue = (id) => {
+    // 2. 🛠️ ආරක්ෂිතව දත්ත ලබා ගැනීමේ ක්‍රමය (Null check)
+    const getSafeValue = (id) => {
         const el = document.getElementById(id);
-        return el ? el.value : "";
+        if (!el) {
+            console.warn("Element not found: " + id);
+            return "";
+        }
+        return el.value;
     };
 
+    // 3. 📝 වාර්තාව සකස් කිරීම
     const record = {
         id: typeof generateId === 'function' ? generateId('INC') : "INC-" + Date.now(),
-        date: getValue('incDate') || new Date().toISOString().split('T')[0], // වැරදි වළක්වා ගැනීමට අද දිනය දේ
-        time: getValue('incTime'),
-        type: getValue('incType'),
-        severity: getValue('incSeverity'),
-        location: getValue('incLocation'),
-        reportedBy: getValue('incReportedBy'),
-        injured: getValue('incInjured'),
-        bodyPart: getValue('incBodyPart'),
-        description: getValue('incDescription'),
-        rca: getValue('incRCA'),
-        actions: getValue('incActions'),
-        status: getValue('incStatus'),
-        photo: photoBase64,
+        date: getSafeValue('incDate') || new Date().toISOString().split('T')[0],
+        time: getSafeValue('incTime'),
+        type: getSafeValue('incType'),
+        severity: getSafeValue('incSeverity'),
+        location: getSafeValue('incLocation'),
+        reportedBy: getSafeValue('incReportedBy'),
+        description: getSafeValue('incDescription'),
+        status: getSafeValue('incStatus'),
+        photo: photoBase64, // මෙන්න අලුත් ඡායාරූපය
         timestamp: new Date().toLocaleString()
     };
 
-    // දත්ත සේව් කිරීම
-    if (typeof addRecord === 'function') addRecord('incidents', record);
-    
+    // 4. 💾 පද්ධතියට දත්ත ඇතුළත් කිරීම
+    if (typeof addRecord === 'function') {
+        addRecord('incidents', record);
+    }
+
+    // 5. 📤 වලාකුළට (Sync) යැවීම
     if (sync) {
-        // Google Sheet එකට දත්ත යැවීම
         if (typeof submitToSheet === 'function') {
-            submitToSheet('Incidents', Object.values(record));
+            // Sheet එකට යවන දත්ත පෙළගැස්ම
+            const sheetData = [
+                record.id, record.date, record.time, record.type, record.severity,
+                record.location, record.reportedBy, record.description, record.status,
+                record.timestamp, record.photo // 👈 ඡායාරූපය අවසානයට යයි
+            ];
+            submitToSheet('Incidents', sheetData);
         } else {
-            console.error("submitToSheet function not found!");
+            alert("Error: submitToSheet function not found!");
         }
     }
 
+    // 6. 🔄 පද්ධතිය යාවත්කාලීන කිරීම
     if (typeof renderIncidents === 'function') renderIncidents();
     if (typeof closeModal === 'function') closeModal('incidentModal');
     
-    alert('Incident saved successfully!'); // සාර්ථක බව පෙන්වීමට
+    showToast('Incident saved and synced successfully!', 'success');
 }
-
 // 🖼️ පින්තූරය දත්තයක් බවට හරවන Function එක
 function fileToBase64(file) {
     return new Promise((resolve, reject) => {
