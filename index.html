@@ -1489,23 +1489,9 @@ function renderIncidents() {
 }
 
 // 1. 🖼️ පින්තූරය තේරූ විට පෙන්වන Function එක (HTML එකේ නමට ගැළපෙන ලෙස)
-function previewImage(input) {
-    const previewContainer = document.getElementById('imagePreviewContainer') || document.getElementById('incPhotoPreviewContainer');
-    const previewImage = document.getElementById('imagePreview') || document.getElementById('incPhotoPreview');
-    
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            if(previewImage) previewImage.src = e.target.result;
-            if(previewContainer) previewContainer.style.display = 'block';
-        }
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
 async function saveIncident(sync = false) {
-    // 1. 📸 ඡායාරූපය ලබා ගැනීම (HTML ID එක 'incidentPhoto' ලෙස තබා ගන්න)
-    const photoInput = document.getElementById('incidentPhoto') || document.getElementById('incPhoto');
+    // පින්තූරය ගන්නවා
+    const photoInput = document.getElementById('incidentPhoto');
     let photoBase64 = "";
     if (photoInput && photoInput.files.length > 0) {
         photoBase64 = await fileToBase64(photoInput.files[0]);
@@ -1516,47 +1502,44 @@ async function saveIncident(sync = false) {
         return el ? el.value : "";
     };
 
-    // 2. 📝 වාර්තාව සකස් කිරීම (Sheet එකේ Column A සිට O දක්වා පිළිවෙළට)
+    // Sheet එකේ තීරු 15 ට පිළිවෙළට දත්ත ලෑස්ති කරනවා (A සිට O)
+    const sheetData = [
+        "INC-" + Date.now(),                                         // 1. Column A (ID)
+        getVal('incDate') || new Date().toISOString().split('T')[0], // 2. Column B (Date)
+        getVal('incTime'),                                           // 3. Column C (Time)
+        getVal('incType'),                                           // 4. Column D (Type)
+        getVal('incSeverity'),                                       // 5. Column E (Severity)
+        getVal('incLocation'),                                       // 6. Column F (Location)
+        getVal('incReportedBy'),                                     // 7. Column G (Reported By)
+        getVal('incInjured'),                                        // 8. Column H (Injured Person)
+        getVal('incBodyPart'),                                       // 9. Column I (Body Part)
+        getVal('incDescription'),                                    // 10. Column J (Description)
+        getVal('incRCA'),                                            // 11. Column K (Root Cause)
+        getVal('incActions'),                                        // 12. Column L (Corrective Action)
+        getVal('incStatus'),                                         // 13. Column M (Status)
+        new Date().toLocaleString(),                                 // 14. Column N (Timestamp)
+        photoBase64                                                  // 15. Column O (Photo - අංක 14)
+    ];
+
     const record = {
-        id: "INC-" + Date.now(),
-        date: getVal('incDate') || new Date().toISOString().split('T')[0],
-        type: getVal('incType'),
-        severity: getVal('incSeverity'),
-        time: getVal('incTime'), // Column E
-        location: getVal('incLocation'), // Column F
-        reportedBy: getVal('incReportedBy'), // Column G
-        injured: getVal('incInjured'), // Column H
-        bodyPart: getVal('incBodyPart'), // Column I
-        description: getVal('incDescription'), // Column J
-        rca: getVal('incRCA'), // Column K
-        actions: getVal('incActions'), // Column L
-        status: getVal('incStatus'), // Column M
-        timestamp: new Date().toLocaleString(), // Column N
-        photo: photoBase64 // Column O (Evidence Photo)
+        id: sheetData[0], date: sheetData[1], time: sheetData[2], type: sheetData[3],
+        severity: sheetData[4], location: sheetData[5], reportedBy: sheetData[6],
+        injured: sheetData[7], bodyPart: sheetData[8], description: sheetData[9],
+        rca: sheetData[10], actions: sheetData[11], status: sheetData[12],
+        timestamp: sheetData[13], photo: sheetData[14]
     };
 
-    // 3. 💾 දත්ත සේව් කිරීම
     if (typeof addRecord === 'function') addRecord('incidents', record);
 
-    if (sync) {
-        if (typeof submitToSheet === 'function') {
-            // තීරු 15 ම පිළිවෙළට මෙතැන තියෙනවා
-            const sheetData = [
-                record.id, record.date, record.type, record.severity, record.time,
-                record.location, record.reportedBy, record.injured, record.bodyPart,
-                record.description, record.rca, record.actions, record.status,
-                record.timestamp, record.photo
-            ];
-            submitToSheet('Incidents', sheetData);
-        }
+    // දත්ත Sheet එකට යවනවා
+    if (sync && typeof submitToSheet === 'function') {
+        submitToSheet('Incidents', sheetData);
     }
 
     if (typeof renderIncidents === 'function') renderIncidents();
     if (typeof closeModal === 'function') closeModal('incidentModal');
     
-    // සාර්ථක පණිවිඩය (Toast) පෙන්වීම
-    const msg = photoBase64 ? "Incident with photo saved successfully!" : "Incident saved (No photo chosen)";
-    alert(msg);
+    alert(photoBase64 ? "ඡායාරූපය සාර්ථකව සේව් විය!" : "දත්ත සේව් විය (ඡායාරූපයක් නැත)");
 }
 // 🖼️ පින්තූරය දත්තයක් බවට හරවන Function එක
 function fileToBase64(file) {
