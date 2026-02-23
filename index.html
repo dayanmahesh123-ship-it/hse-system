@@ -1478,50 +1478,73 @@ function renderIncidents() {
   `;
 }
 
+// 1. 🖼️ පින්තූරය තේරූ විට පෙන්වන Function එක (HTML එකේ නමට ගැළපෙන ලෙස)
+function previewImage(input) {
+    const previewContainer = document.getElementById('imagePreviewContainer') || document.getElementById('incPhotoPreviewContainer');
+    const previewImage = document.getElementById('imagePreview') || document.getElementById('incPhotoPreview');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            if(previewImage) previewImage.src = e.target.result;
+            if(previewContainer) previewContainer.style.display = 'block';
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// 2. 💾 Incident එක සේව් කරන ප්‍රධාන Function එක (වැරදි මඟහරවා ගත් සංස්කරණය)
 async function saveIncident(sync = false) {
-    // 📸 ඡායාරූපය ලබා ගැනීම සහ එය කියවීම
-    const photoInput = document.getElementById('incPhoto');
+    // 📸 ඡායාරූපය ලබා ගැනීම
+    const photoInput = document.getElementById('incidentPhoto') || document.getElementById('incPhoto');
     let photoBase64 = "";
     if (photoInput && photoInput.files.length > 0) {
         photoBase64 = await fileToBase64(photoInput.files[0]);
     }
 
-    const record = {
-        id: generateId('INC'),
-        date: $('#incDate').value,
-        time: $('#incTime')?.value || '',
-        type: $('#incType').value,
-        severity: $('#incSeverity').value,
-        location: $('#incLocation').value,
-        reportedBy: $('#incReportedBy').value,
-        injured: $('#incInjured')?.value || '',
-        bodyPart: $('#incBodyPart')?.value || '',
-        description: $('#incDescription').value,
-        rca: $('#incRCA')?.value || '',
-        actions: $('#incActions')?.value || '',
-        status: $('#incStatus').value,
-        photo: photoBase64, // 📸 අලුතින් එක් කළ ඡායාරූප දත්තය
-        timestamp: now()
+    // දත්ත ලබා ගැනීමේදී වැරදි සිදු නොවන ලෙස පරීක්ෂා කිරීම
+    const getValue = (id) => {
+        const el = document.getElementById(id);
+        return el ? el.value : "";
     };
 
-    addRecord('incidents', record);
-    showToast('Incident recorded successfully!', 'success');
+    const record = {
+        id: typeof generateId === 'function' ? generateId('INC') : "INC-" + Date.now(),
+        date: getValue('incDate') || new Date().toISOString().split('T')[0], // වැරදි වළක්වා ගැනීමට අද දිනය දේ
+        time: getValue('incTime'),
+        type: getValue('incType'),
+        severity: getValue('incSeverity'),
+        location: getValue('incLocation'),
+        reportedBy: getValue('incReportedBy'),
+        injured: getValue('incInjured'),
+        bodyPart: getValue('incBodyPart'),
+        description: getValue('incDescription'),
+        rca: getValue('incRCA'),
+        actions: getValue('incActions'),
+        status: getValue('incStatus'),
+        photo: photoBase64,
+        timestamp: new Date().toLocaleString()
+    };
 
+    // දත්ත සේව් කිරීම
+    if (typeof addRecord === 'function') addRecord('incidents', record);
+    
     if (sync) {
-        // 📤 Google Sheet එකට පින්තූරයත් සමඟ දත්ත යැවීම
-        submitToSheet('Incidents', [
-            record.id, record.date, record.time, record.type, record.severity,
-            record.location, record.reportedBy, record.injured, record.bodyPart,
-            record.description, record.rca, record.actions, record.status, 
-            record.timestamp, record.photo // 👈 15 වැනි තීරුව ලෙස පින්තූරය යයි
-        ]);
+        // Google Sheet එකට දත්ත යැවීම
+        if (typeof submitToSheet === 'function') {
+            submitToSheet('Incidents', Object.values(record));
+        } else {
+            console.error("submitToSheet function not found!");
+        }
     }
 
-    renderIncidents();
-    closeModal('incidentModal'); // පෝරමය වසා දැමීමට
+    if (typeof renderIncidents === 'function') renderIncidents();
+    if (typeof closeModal === 'function') closeModal('incidentModal');
+    
+    alert('Incident saved successfully!'); // සාර්ථක බව පෙන්වීමට
 }
 
-// 🖼️ පින්තූරය දත්තයක් බවට හරවන සහය ශ්‍රිතය (Helper Function)
+// 🖼️ පින්තූරය දත්තයක් බවට හරවන Function එක
 function fileToBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
