@@ -1409,6 +1409,15 @@ function renderIncidents() {
               <option>Closed</option>
             </select>
           </div>
+          <div class="form-group full-width" style="margin-top: 15px; border: 1px dashed #007bff; padding: 15px; border-radius: 8px;">
+    <label style="font-weight: bold; color: #007bff; display: block; margin-bottom: 8px;">📸 සාක්ෂි ඡායාරූපය (Upload Photo):</label>
+    <input type="file" id="incidentPhoto" accept="image/*" class="form-control" onchange="previewImage(this)" style="padding: 10px;">
+    
+    <div id="imagePreviewContainer" style="margin-top: 15px; display: none; text-align: center;">
+        <img id="imagePreview" src="#" alt="Preview" style="max-width: 100%; height: 200px; border-radius: 8px; border: 2px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        <p style="font-size: 13px; color: #28a745; font-weight: bold; margin-top: 8px;">✅ පින්තූරය සාර්ථකව තෝරාගත්තා.</p>
+    </div>
+</div>
         </div>
         <div class="form-actions">
           <button class="btn btn-primary" onclick="saveIncident()">💾 Save Incident</button>
