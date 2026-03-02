@@ -928,28 +928,30 @@ const CONFIG = {
   DEVELOPER: 'Mahesh',
   POSITION: 'HSE Officer'
 };
-   async function updateSafeDays() {
+
+async function updateSafeDays() {
     try {
         const response = await fetch(CONFIG.SCRIPT_URL);
         const data = await response.json();
         
-        const lastIncidentDate = new Date(data.lastDate);
-        const today = new Date();
-        
-        // දින ගණන ගණනය කිරීම
-        const diffTime = Math.abs(today - lastIncidentDate);
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        
-        // Dashboard එකේ අදාළ තැනට අගය ඇතුළත් කිරීම
-        // ඔබේ HTML එකේ id="safe-days-count" සහිත element එකක් තිබිය යුතුය
-        document.getElementById('safe-days-count').innerText = diffDays;
+        if (data && data.lastDate) {
+            const lastIncidentDate = new Date(data.lastDate);
+            const today = new Date();
+            const diffTime = Math.abs(today - lastIncidentDate);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            const safeDaysEl = document.getElementById('safe-days-count');
+            if(safeDaysEl) {
+                safeDaysEl.innerText = diffDays;
+            }
+        }
     } catch (error) {
         console.error("Error fetching safe days:", error);
     }
 }
 
-// වෙබ් අඩවිය Load වන විට මෙය ක්‍රියාත්මක කරන්න
 window.onload = updateSafeDays;
+
 // 1. 📸 පින්තූරය තේරූ විට එය වෙබ් අඩවියේ පෙන්වීමට
 function previewImage(input) {
     const previewContainer = document.getElementById('imagePreviewContainer');
@@ -964,7 +966,7 @@ function previewImage(input) {
     }
 }
 
-// 2. 📄 ඡායාරූපය දත්තයක් බවට හරවන සහය ශ්‍රිතය
+// 2. 📄 ඡායාරූපය දත්තයක් බවට හරවන සහය ශ්‍රිතය 
 function fileToBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -974,15 +976,6 @@ function fileToBase64(file) {
     });
 }
 
-// 2. පින්තූරය දත්තයක් බවට හරවන Helper Function එක
-async function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
-}
 // ============================================
 // UTILITY FUNCTIONS
 // ============================================
@@ -1097,7 +1090,6 @@ function initNavigation() {
       this.classList.add('active');
       const page = this.getAttribute('data-page');
       renderPage(page);
-      // Close sidebar on mobile
       if (window.innerWidth <= 992) toggleSidebar();
     });
   });
@@ -1169,7 +1161,6 @@ function initApp() {
 
 function seedDemoData() {
   if (!localStorage.getItem('hse_seeded')) {
-    // Seed fire equipment
     storeData('fireEquipment', [
       { id:'FE-001', type:'CO2', capacity:'5kg', location:'Workshop A', installDate:'2023-06-15', expiryDate:'2024-06-15', lastInspection:'2024-01-10', nextDue:'2024-07-10', status:'Serviceable' },
       { id:'FE-002', type:'DCP', capacity:'9kg', location:'Store Room', installDate:'2023-03-20', expiryDate:'2025-03-20', lastInspection:'2024-02-15', nextDue:'2024-08-15', status:'Serviceable' },
@@ -1214,7 +1205,6 @@ function renderDashboard() {
   const expiredFE = fireEq.filter(f => f.status === 'Expired' || f.status === 'Recharge Required').length;
   const ltiFree = localStorage.getItem('ltiFreeDays') || '145';
 
-  // Calculate alerts
   const feAlerts = fireEq.filter(f => {
     const days = daysBetween(today(), f.nextDue);
     return days <= 30;
@@ -1258,7 +1248,6 @@ function renderDashboard() {
           <div class="stat-label">Training Compliance</div>
         </div>
       </div>
-
       <div class="gauge-row">
         <div class="gauge-card">
           <div class="gauge-value" style="color:var(--success)">87%</div>
@@ -1492,9 +1481,7 @@ function renderIncidents() {
   `;
 }
 
-// 1. 🖼️ පින්තූරය තේරූ විට පෙන්වන Function එක (HTML එකේ නමට ගැළපෙන ලෙස)
 async function saveIncident(sync = false) {
-    // පින්තූරය ගන්නවා
     const photoInput = document.getElementById('incidentPhoto');
     let photoBase64 = "";
     if (photoInput && photoInput.files.length > 0) {
@@ -1506,23 +1493,22 @@ async function saveIncident(sync = false) {
         return el ? el.value : "";
     };
 
-    // Sheet එකේ තීරු 15 ට පිළිවෙළට දත්ත ලෑස්ති කරනවා (A සිට O)
     const sheetData = [
-        "INC-" + Date.now(),                                         // 1. Column A (ID)
-        getVal('incDate') || new Date().toISOString().split('T')[0], // 2. Column B (Date)
-        getVal('incTime'),                                           // 3. Column C (Time)
-        getVal('incType'),                                           // 4. Column D (Type)
-        getVal('incSeverity'),                                       // 5. Column E (Severity)
-        getVal('incLocation'),                                       // 6. Column F (Location)
-        getVal('incReportedBy'),                                     // 7. Column G (Reported By)
-        getVal('incInjured'),                                        // 8. Column H (Injured Person)
-        getVal('incBodyPart'),                                       // 9. Column I (Body Part)
-        getVal('incDescription'),                                    // 10. Column J (Description)
-        getVal('incRCA'),                                            // 11. Column K (Root Cause)
-        getVal('incActions'),                                        // 12. Column L (Corrective Action)
-        getVal('incStatus'),                                         // 13. Column M (Status)
-        new Date().toLocaleString(),                                 // 14. Column N (Timestamp)
-        photoBase64                                                  // 15. Column O (Photo - අංක 14)
+        "INC-" + Date.now(),                                         
+        getVal('incDate') || new Date().toISOString().split('T')[0], 
+        getVal('incTime'),                                           
+        getVal('incType'),                                           
+        getVal('incSeverity'),                                       
+        getVal('incLocation'),                                       
+        getVal('incReportedBy'),                                     
+        getVal('incInjured'),                                        
+        getVal('incBodyPart'),                                       
+        getVal('incDescription'),                                    
+        getVal('incRCA'),                                            
+        getVal('incActions'),                                        
+        getVal('incStatus'),                                         
+        new Date().toLocaleString(),                                 
+        photoBase64                                                  
     ];
 
     const record = {
@@ -1535,7 +1521,6 @@ async function saveIncident(sync = false) {
 
     if (typeof addRecord === 'function') addRecord('incidents', record);
 
-    // දත්ත Sheet එකට යවනවා
     if (sync && typeof submitToSheet === 'function') {
         submitToSheet('Incidents', sheetData);
     }
@@ -1545,15 +1530,7 @@ async function saveIncident(sync = false) {
     
     alert(photoBase64 ? "ඡායාරූපය සාර්ථකව සේව් විය!" : "දත්ත සේව් විය (ඡායාරූපයක් නැත)");
 }
-// 🖼️ පින්තූරය දත්තයක් බවට හරවන Function එක
-function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-    });
-}
+
 // ============================================
 // HIRA MODULE
 // ============================================
@@ -2003,7 +1980,6 @@ function savePowerTool(sync = false) {
   const elcb = $('ptElcb').value;
   const ppe = $('ptPPE').value;
 
-  // Auto-determine status
   const isCritical = guard === 'Damaged' || guard === 'Missing' || cable === 'Exposed Wires' || cable === 'Damaged' || elcb === 'No';
   const status = isCritical ? 'UNSAFE' : 'SAFE';
 
@@ -2691,6 +2667,7 @@ function renderEmergency() {
         </div>
         <div class="form-actions">
           <button class="btn btn-success" onclick="saveEmergencyContact()">💾 Add Contact</button>
+          <button class="btn btn-warning" onclick="saveEmergencyContact(true)">☁️ Save & Sync</button>
         </div>
       </div>
 
@@ -2739,13 +2716,14 @@ function renderEmergency() {
         </div>
         <div class="form-actions">
           <button class="btn btn-success" onclick="saveEmergencyDrill()">💾 Save Drill</button>
+          <button class="btn btn-warning" onclick="saveEmergencyDrill(true)">☁️ Save & Sync</button>
         </div>
       </div>
     </div>
   `;
 }
 
-function saveEmergencyContact() {
+function saveEmergencyContact(sync = false) {
   const record = {
     id: generateId('EC'),
     name: $('ecName').value,
@@ -2760,10 +2738,11 @@ function saveEmergencyContact() {
   if (!record.name || !record.phone) { showToast('Name and phone required', 'error'); return; }
   addRecord('emergencyContacts', record);
   showToast('Emergency contact added!', 'success');
+  if (sync) submitToSheet('EmergencyContacts', Object.values(record));
   renderEmergency();
 }
 
-function saveEmergencyDrill() {
+function saveEmergencyDrill(sync = false) {
   const record = {
     id: generateId('ED'),
     date: $('edDate').value,
@@ -2776,6 +2755,7 @@ function saveEmergencyDrill() {
 
   addRecord('emergencyDrills', record);
   showToast('Emergency drill recorded!', 'success');
+  if (sync) submitToSheet('EmergencyDrills', Object.values(record));
   renderEmergency();
 }
 
@@ -2941,6 +2921,7 @@ function renderPPE() {
         </div>
         <div class="form-actions">
           <button class="btn btn-success" onclick="savePPE()">💾 Save</button>
+          <button class="btn btn-warning" onclick="savePPE(true)">☁️ Save & Sync</button>
         </div>
       </div>
 
@@ -2962,7 +2943,7 @@ function renderPPE() {
   `;
 }
 
-function savePPE() {
+function savePPE(sync = false) {
   const record = {
     id: generateId('PPE'),
     date: $('ppeDate').value,
@@ -2979,6 +2960,7 @@ function savePPE() {
   if (!record.name) { showToast('Employee name required', 'error'); return; }
   addRecord('ppeRecords', record);
   showToast('PPE record saved!', 'success');
+  if (sync) submitToSheet('PPERecords', Object.values(record));
   renderPPE();
 }
 
@@ -3288,6 +3270,7 @@ function renderLegal() {
         </div>
         <div class="form-actions">
           <button class="btn btn-success" onclick="saveLegal()">💾 Save</button>
+          <button class="btn btn-warning" onclick="saveLegal(true)">☁️ Save & Sync</button>
         </div>
       </div>
 
@@ -3311,7 +3294,7 @@ function renderLegal() {
   `;
 }
 
-function saveLegal() {
+function saveLegal(sync = false) {
   const record = {
     id: generateId('LR'),
     legislation: $('lrLegislation').value,
@@ -3327,6 +3310,7 @@ function saveLegal() {
   if (!record.legislation || !record.description) { showToast('Required fields missing', 'error'); return; }
   addRecord('legalRegister', record);
   showToast('Legal requirement added!', 'success');
+  if (sync) submitToSheet('LegalRegister', Object.values(record));
   renderLegal();
 }
 
