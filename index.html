@@ -1713,16 +1713,23 @@ function renderHIRA() {
   `;
 
   // Auto-calc on change
-  ['hiraLikelihood','hiraSeverity'].forEach(id => {
+  ['hiraLikelihood','hiraSeverity', 'hiraResLikelihood', 'hiraResSeverity'].forEach(id => {
     const el = $(id);
     if(el) el.addEventListener('change', calcRiskScore);
   });
 }
 
 function calcRiskScore() {
-  const l = parseInt($('hiraLikelihood').value);
-  const s = parseInt($('hiraSeverity').value);
+  const l = parseInt($('hiraLikelihood').value) || 0;
+  const s = parseInt($('hiraSeverity').value) || 0;
   $('hiraScore').value = `${l * s} — ${l*s >= 15 ? '🔴 EXTREME' : l*s >= 9 ? '🟠 HIGH' : l*s >= 4 ? '🟡 MEDIUM' : '🟢 LOW'}`;
+
+  const rl = parseInt($('hiraResLikelihood').value) || 0;
+  const rs = parseInt($('hiraResSeverity').value) || 0;
+  const resScoreInput = $('hiraResScore');
+  if (resScoreInput) {
+      resScoreInput.value = `${rl * rs} — ${rl*rs >= 15 ? '🔴 EXTREME' : rl*rs >= 9 ? '🟠 HIGH' : rl*rs >= 4 ? '🟡 MEDIUM' : '🟢 LOW'}`;
+  }
 }
 
 function saveHIRA(sync = false) {
