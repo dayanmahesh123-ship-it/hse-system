@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HSE Management System — Hayleys Fentons Ltd</title>
 <style>
-   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 /* ============================================
    CSS — HSE MANAGEMENT SYSTEM
    Developer: Mahesh | HSE Officer
@@ -1272,12 +1271,6 @@ function renderDashboard() {
           <div class="stat-icon">📚</div>
           <div class="stat-value">${trainings.length > 0 ? Math.round((trainings.filter(t=>t.status==='Completed').length / trainings.length)*100) : 85}%</div>
           <div class="stat-label">Training Compliance</div>
-        </div>
-      </div>
-<div class="form-card" style="margin-bottom: 25px; padding: 20px;">
-        <h3 style="text-align: center;">📊 Incident Distribution by Type</h3>
-        <div style="max-width: 320px; margin: 0 auto;">
-          <canvas id="incidentPieChart"></canvas>
         </div>
       </div>
       <!-- COMPLIANCE GAUGES -->
@@ -3763,29 +3756,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
-   function updatePieChart() {
-    const incidents = getStoredData('incidents');
-    const counts = {};
-    incidents.forEach(i => { counts[i.type] = (counts[i.type] || 0) + 1; });
-    const labels = Object.keys(counts);
-    const values = Object.values(counts);
-    const canvas = document.getElementById('incidentPieChart');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (window.myPieChart) { window.myPieChart.destroy(); }
-    window.myPieChart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: labels,
-            datasets: [{
-                data: values,
-                backgroundColor: ['#e63946', '#f77f00', '#2a9d8f', '#457b9d', '#f4a261', '#1b263b'],
-                borderWidth: 1
-            }]
-        },
-        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-    });
-}
-</script>
-</body>
-</html>
+  
