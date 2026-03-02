@@ -2760,7 +2760,7 @@ function saveEmergencyDrill(sync = false) {
 }
 
 // ============================================
-// TRAINING MANAGEMENT
+// TRAINING MANAGEMENT (UPDATED WITH PHOTO)
 // ============================================
 function renderTraining() {
   const data = getStoredData('trainings');
@@ -2813,7 +2813,18 @@ function renderTraining() {
               <option>Completed</option><option>Scheduled</option><option>Cancelled</option>
             </select>
           </div>
+          
+          <div class="form-group full-width" style="margin-top: 15px; border: 1px dashed #2a9d8f; padding: 15px; border-radius: 8px;">
+            <label style="font-weight: bold; color: #2a9d8f; display: block; margin-bottom: 8px;">📸 Training Evidence Photo (Upload):</label>
+            <input type="file" id="trainingPhoto" accept="image/*" class="form-control" onchange="previewTrainingImage(this)" style="padding: 10px;">
+            
+            <div id="trImagePreviewContainer" style="margin-top: 15px; display: none; text-align: center;">
+                <img id="trImagePreview" src="#" alt="Preview" style="max-width: 100%; height: 200px; border-radius: 8px; border: 2px solid #eee; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <p style="font-size: 13px; color: #2a9d8f; font-weight: bold; margin-top: 8px;">✅ Photo selected successfully.</p>
+            </div>
+          </div>
         </div>
+        
         <div class="form-actions">
           <button class="btn btn-success" onclick="saveTraining()">💾 Save Training</button>
           <button class="btn btn-warning" onclick="saveTraining(true)">☁️ Save & Sync</button>
@@ -2839,24 +2850,69 @@ function renderTraining() {
   `;
 }
 
-function saveTraining(sync = false) {
+// 📸 Training Image Preview Helper (NEW)
+function previewTrainingImage(input) {
+    const previewContainer = $('trImagePreviewContainer');
+    const previewImage = $('trImagePreview');
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            if(previewImage) previewImage.src = e.target.result;
+            if(previewContainer) previewContainer.style.display = 'block';
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+async function saveTraining(sync = false) {
+  // Capture the photo if available (NEW)
+  const photoInput = $('trainingPhoto');
+  let photoBase64 = "";
+  if (photoInput && photoInput.files.length > 0) {
+      photoBase64 = await fileToBase64(photoInput.files[0]);
+  }
+
+  const getVal = (id) => {
+    const el = document.getElementById(id);
+    return el ? el.value : "";
+  };
+
+  const id = generateId('TR');
+  
+  // Sheet එකට යවන දත්ත පිළිවෙළ (O තීරුවට Photo දත්තය එකතු කළා)
+  const sheetData = [
+    id,
+    $('trDate').value,
+    $('trTitle').value,
+    $('trType').value,
+    $('trTrainer')?.value || '',
+    $('trDuration')?.value || '',
+    $('trAttendees')?.value || '',
+    $('trTopics')?.value || '',
+    $('trStatus').value,
+    now(),
+    photoBase64 // <-- New Column: Photo Data (O Column - Index 10)
+  ];
+
   const record = {
-    id: generateId('TR'),
-    date: $('trDate').value,
-    title: $('trTitle').value,
-    type: $('trType').value,
-    trainer: $('trTrainer')?.value || '',
-    duration: $('trDuration')?.value || '',
-    attendees: $('trAttendees')?.value || '',
-    topics: $('trTopics')?.value || '',
-    status: $('trStatus').value,
-    timestamp: now()
+    id: sheetData[0],
+    date: sheetData[1],
+    title: sheetData[2],
+    type: sheetData[3],
+    trainer: sheetData[4],
+    duration: sheetData[5],
+    attendees: sheetData[6],
+    topics: sheetData[7],
+    status: sheetData[8],
+    timestamp: sheetData[9],
+    photo: sheetData[10]
   };
 
   if (!record.title) { showToast('Training title required', 'error'); return; }
   addRecord('trainings', record);
   showToast('Training record saved!', 'success');
-  if (sync) submitToSheet('Training', Object.values(record));
+  
+  if (sync) submitToSheet('Training', sheetData);
   renderTraining();
 }
 
