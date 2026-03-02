@@ -935,13 +935,35 @@ tbody tr:hover { background: rgba(69,123,157,0.05); }
 // CONFIGURATION
 // ============================================
 const CONFIG = {
-  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwObORiXJtYMHS8sEHcOqfcKVJSx0dEqEjrQbhXNfK1F1P7LXVZzA5G7lLxqzwhkUfZWQ/exec',
+  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxpUBFVRejWllEDStgd5b18K_IQc6jfzqtOJsqhE57oPVlaiFpeRTHfK3wqALX4FQB2Hw/exec',
   ADMIN_USER: 'mahesh',
   ADMIN_PASS: '44234',
   COMPANY: 'Hayleys Fentons Limited',
   DEVELOPER: 'Mahesh',
   POSITION: 'HSE Officer'
 };
+   async function updateSafeDays() {
+    try {
+        const response = await fetch(CONFIG.SCRIPT_URL);
+        const data = await response.json();
+        
+        const lastIncidentDate = new Date(data.lastDate);
+        const today = new Date();
+        
+        // දින ගණන ගණනය කිරීම
+        const diffTime = Math.abs(today - lastIncidentDate);
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        // Dashboard එකේ අදාළ තැනට අගය ඇතුළත් කිරීම
+        // ඔබේ HTML එකේ id="safe-days-count" සහිත element එකක් තිබිය යුතුය
+        document.getElementById('safe-days-count').innerText = diffDays;
+    } catch (error) {
+        console.error("Error fetching safe days:", error);
+    }
+}
+
+// වෙබ් අඩවිය Load වන විට මෙය ක්‍රියාත්මක කරන්න
+window.onload = updateSafeDays;
 // 1. 📸 පින්තූරය තේරූ විට එය වෙබ් අඩවියේ පෙන්වීමට
 function previewImage(input) {
     const previewContainer = document.getElementById('imagePreviewContainer');
